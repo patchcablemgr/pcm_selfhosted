@@ -1,0 +1,5 @@
+#!/bin/bash
+
+sudo git -C /home/garrett/pcm_infra/ pull
+sudo /home/garrett/pcm_infra/laravel/vendor/bin/sail -f /home/garrett/pcm_infra/docker-compose.yml up --build
+sudo php /home/garrett/pcm_infra/laravel/vendor/bin/envoy run --path=/home/garrett/pcm_infra/laravel/Envoy.blade.php deploy

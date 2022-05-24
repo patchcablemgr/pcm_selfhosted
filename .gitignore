@@ -1,0 +1,23 @@
+# Database
+database/storage/*
+!database/storage/.keep
+
+# Proxy
+proxy/cert/*
+!proxy/cert/.keep
+proxy/key/*
+!proxy/key/.keep
+
+# App
+app/*
+app/.*
+!app/.keep
+
+# Shared
+shared/*
+!shared/certs
+!shared/keys
+shared/certs/*
+!shared/certs/.keep
+shared/keys/*
+!shared/keys/.keep

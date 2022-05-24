@@ -1,0 +1,72 @@
+version: "3.7"
+services:
+  app:
+    env_file:
+      - ./app/.env
+      - ./shared/network_config
+    build:
+      context: ./app/vendor/laravel/sail/runtimes/8.1
+      dockerfile: Dockerfile
+      args:
+        WWWGROUP: '${WWWGROUP}'
+    image: sail-8.1/app
+    container_name: app
+    environment:
+      WWWUSER: '${WWWUSER}'
+      LARAVEL_SAIL: 0
+      UPDATE_TEST: 14
+    volumes:
+      - './app:/var/www/html'
+      - './shared:/shared'
+    networks:
+      - app_network
+    restart: always
+      
+  database:
+    env_file:
+      - ./app/.env
+    image: 'mysql:8.0'
+    container_name: database
+    environment:
+      MYSQL_ROOT_PASSWORD: '${DB_PASSWORD}'
+      MYSQL_DATABASE: '${DB_DATABASE}'
+      MYSQL_USER: '${DB_USERNAME}'
+      MYSQL_PASSWORD: '${DB_PASSWORD}'
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+    volumes:
+      - './database/storage:/var/lib/mysql'
+    networks:
+      - app_network
+    ports:
+      - "3306:3306"
+    restart: always
+
+  adminer:
+    image: adminer
+    container_name: adminer
+    networks:
+      - app_network
+    restart: always
+    ports:
+      - 8080:8080
+    restart: always
+
+  proxy:
+    build:
+      context: ./proxy
+    container_name: proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - app_network
+    volumes:
+      - ./proxy/config:/etc/nginx
+      - ./proxy/cert:/etc/ssl/certs
+      - ./proxy/key:/etc/ssl/private
+    environment:
+      - SUBJECT_ALTERNATE_NAME=pcm.lcl
+      - SUBJECT_ALTERNATE_IP=10.0.0.100
+    restart: always
+networks:
+  app_network:

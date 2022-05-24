@@ -1,0 +1,40 @@
+#!/bin/bash
+
+source /home/garrett/pcm_infra/shared/network_config
+
+echo $DHCP > ~/watch_network_config_test
+echo $HOST >> ~/watch_network_config_test
+echo $GATEWAY >> ~/watch_network_config_test
+echo $DNS >> ~/watch_network_config_test
+echo $(whoami) >> ~/watch_network_config_test
+echo --- >> ~/watch_network_config_test
+
+#
+# Creates a backup
+cp /etc/netplan/00-installer-config.yaml /etc/netplan/00-installer-config.yaml.bk_`date +%Y%m%d%H%M`
+
+if [ $DHCP = 'yes' ]
+then
+cat > /etc/netplan/00-installer-config.yaml <<EOF
+network:
+  ethernets:
+    ens160:
+      dhcp4: yes
+  version: 2
+EOF
+else
+cat > /etc/netplan/00-installer-config.yaml <<EOF
+network:
+  ethernets:
+    ens160:
+      dhcp4: no
+      addresses:
+      - $HOST
+      gateway4: $GATEWAY
+      nameservers:
+        addresses:
+        - $DNS
+  version: 2
+EOF
+fi
+sudo netplan apply
