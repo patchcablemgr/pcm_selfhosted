@@ -1,14 +1,14 @@
 #!/bin/bash
 
-source /home/garrett/pcm_infra/shared/ssl_config
+source /home/pcmuser/pcm_selfhosted/shared/ssl_config
 
 echo $CERT > ~/watch_ssl_config_test
 echo $KEY >> ~/watch_ssl_config_test
 echo $(pwd) >> ~/watch_ssl_config_test
-if [ -f "/home/garrett/pcm_infra/shared/certs/$CERT" ] && [ -f "/home/garrett/pcm_infra/shared/keys/$KEY" ]; then
+if [ -f "/home/pcmuser/pcm_selfhosted/shared/certs/$CERT" ] && [ -f "/home/pcmuser/pcm_selfhosted/shared/keys/$KEY" ]; then
 	#echo "here1" >> ~/watch_ssl_config_test
-	cp /home/garrett/pcm_infra/shared/certs/$CERT /home/garrett/pcm_infra/nginx/cert/cert.pem 2>~/watch_error
-	cp /home/garrett/pcm_infra/shared/keys/$KEY /home/garrett/pcm_infra/nginx/key/key.pem
+	cp /home/pcmuser/pcm_selfhosted/shared/certs/$CERT /home/pcmuser/pcm_selfhosted/nginx/cert/cert.pem 2>~/watch_error
+	cp /home/pcmuser/pcm_selfhosted/shared/keys/$KEY /home/pcmuser/pcm_selfhosted/nginx/key/key.pem
 
 	sudo docker exec nginx nginx -s reload
 fi

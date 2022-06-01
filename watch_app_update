@@ -1,5 +1,5 @@
 #!/bin/bash
 
-sudo git -C /home/garrett/pcm_infra/ pull
-sudo /home/garrett/pcm_infra/laravel/vendor/bin/sail -f /home/garrett/pcm_infra/docker-compose.yml up --build
-sudo php /home/garrett/pcm_infra/laravel/vendor/bin/envoy run --path=/home/garrett/pcm_infra/laravel/Envoy.blade.php deploy
+sudo git -C /home/pcmuser/pcm_selfhosted/ pull
+sudo /home/pcmuser/pcm_selfhosted/laravel/vendor/bin/sail -f /home/pcmuser/pcm_selfhosted/docker-compose.yml up --build
+sudo php /home/pcmuser/pcm_selfhosted/laravel/vendor/bin/envoy run --path=/home/pcmuser/pcm_selfhosted/laravel/Envoy.blade.php deploy
