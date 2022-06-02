@@ -2,11 +2,8 @@
 
 source /home/pcmuser/pcm_selfhosted/shared/ssl_config
 
-echo $CERT > ~/watch_ssl_config_test
-echo $KEY >> ~/watch_ssl_config_test
-echo $(pwd) >> ~/watch_ssl_config_test
 if [ -f "/home/pcmuser/pcm_selfhosted/shared/certs/$CERT" ] && [ -f "/home/pcmuser/pcm_selfhosted/shared/keys/$KEY" ]; then
-	#echo "here1" >> ~/watch_ssl_config_test
+	
 	cp /home/pcmuser/pcm_selfhosted/shared/certs/$CERT /home/pcmuser/pcm_selfhosted/nginx/cert/cert.pem 2>~/watch_error
 	cp /home/pcmuser/pcm_selfhosted/shared/keys/$KEY /home/pcmuser/pcm_selfhosted/nginx/key/key.pem
 

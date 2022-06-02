@@ -14,13 +14,38 @@ services:
     environment:
       WWWUSER: '${WWWUSER}'
       LARAVEL_SAIL: 0
-      UPDATE_TEST: 14
     volumes:
       - './app:/var/www/html'
       - './shared:/shared'
     networks:
       - app_network
     restart: always
+    depends_on:
+      - database
+
+  app_init:
+    env_file:
+      - ./app/.env
+    build:
+      context: ./app_init
+      dockerfile: Dockerfile
+      args:
+        WWWGROUP: '${WWWGROUP}'
+    image: sail-8.1/app
+    container_name: app_init
+    environment:
+      WWWUSER: '${WWWUSER}'
+      LARAVEL_SAIL: 0
+    volumes:
+      - './app:/var/www/html'
+      - './app_init/wait-for-it.sh:/usr/local/bin/wait-for-it.sh'
+      - './app_init/app_init.sh:/usr/local/bin/app_init.sh'
+      - './app_init/db_init.sh:/usr/local/bin/db_init.sh'
+    networks:
+      - app_network
+    depends_on:
+      - database
+    entrypoint: /usr/local/bin/app_init.sh
       
   database:
     env_file:
@@ -68,5 +93,7 @@ services:
       - SUBJECT_ALTERNATE_NAME=pcm.lcl
       - SUBJECT_ALTERNATE_IP=10.0.0.100
     restart: always
+    depends_on:
+      - app
 networks:
   app_network:
