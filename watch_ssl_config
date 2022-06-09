@@ -4,8 +4,8 @@ source /home/pcmuser/pcm_selfhosted/shared/ssl_config
 
 if [ -f "/home/pcmuser/pcm_selfhosted/shared/certs/$CERT" ] && [ -f "/home/pcmuser/pcm_selfhosted/shared/keys/$KEY" ]; then
 	
-	cp /home/pcmuser/pcm_selfhosted/shared/certs/$CERT /home/pcmuser/pcm_selfhosted/nginx/cert/cert.pem 2>~/watch_error
-	cp /home/pcmuser/pcm_selfhosted/shared/keys/$KEY /home/pcmuser/pcm_selfhosted/nginx/key/key.pem
+	cp /home/pcmuser/pcm_selfhosted/shared/certs/$CERT /home/pcmuser/pcm_selfhosted/proxy/cert/cert.pem
+	cp /home/pcmuser/pcm_selfhosted/shared/keys/$KEY /home/pcmuser/pcm_selfhosted/proxy/key/key.pem
 
-	sudo docker exec nginx nginx -s reload
+	sudo docker exec proxy nginx -s reload
 fi
