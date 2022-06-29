@@ -1,3 +1,6 @@
+# Project
+.env
+
 # Database
 database/storage/*
 !database/storage/.keep
