@@ -53,10 +53,10 @@ services:
     image: 'mysql:8.0'
     container_name: database
     environment:
-      MYSQL_ROOT_PASSWORD: '${DB_ROOT_PASSWORD}'
-      MYSQL_DATABASE: '${DB_DATABASE}'
-      MYSQL_USER: '${DB_USERNAME}'
-      MYSQL_PASSWORD: '${DB_PASSWORD}'
+      MYSQL_ROOT_PASSWORD: '${DB_APP_ROOT_PASSWORD}'
+      MYSQL_DATABASE: '${DB_APP_DATABASE}'
+      MYSQL_USER: '${DB_APP_USERNAME}'
+      MYSQL_PASSWORD: '${DB_APP_PASSWORD}'
       MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
     volumes:
       - './database/storage:/var/lib/mysql'
