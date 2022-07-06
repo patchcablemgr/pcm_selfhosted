@@ -6,12 +6,16 @@ source /home/pcmuser/pcm_selfhosted/shared/network_config
 # Creates a backup
 cp /etc/netplan/00-installer-config.yaml /etc/netplan/00-installer-config.yaml.bk_`date +%Y%m%d%H%M`
 
+#
+# Get interface name
+export NET_NAME=$(ip link | awk -F": " '$0 ~ "en(o|s|p)"{print $2;getline}' | head -1)
+
 if [ $DHCP = 'yes' ]
 then
 cat > /etc/netplan/00-installer-config.yaml <<EOF
 network:
   ethernets:
-    ens160:
+    $NET_NAME:
       dhcp4: yes
   version: 2
 EOF
@@ -19,7 +23,7 @@ else
 cat > /etc/netplan/00-installer-config.yaml <<EOF
 network:
   ethernets:
-    ens160:
+    $NET_NAME:
       dhcp4: no
       addresses:
       - $HOST
