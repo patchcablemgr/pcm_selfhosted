@@ -8,14 +8,14 @@ cp /etc/netplan/00-installer-config.yaml /etc/netplan/00-installer-config.yaml.b
 
 #
 # Get interface name
-export NET_NAME=$(ip link | awk -F": " '$0 ~ "en(o|s|p)"{print $2;getline}' | head -1)
+#export NET_NAME=$(ip link | awk -F": " '$0 ~ "(en(o|s|p))|eth0"{print $2;getline}' | head -1)
 
 if [ $DHCP = 'yes' ]
 then
 cat > /etc/netplan/00-installer-config.yaml <<EOF
 network:
   ethernets:
-    $NET_NAME:
+    eth0:
       dhcp4: yes
   version: 2
 EOF
@@ -23,7 +23,7 @@ else
 cat > /etc/netplan/00-installer-config.yaml <<EOF
 network:
   ethernets:
-    $NET_NAME:
+    eth0:
       dhcp4: no
       addresses:
       - $HOST
