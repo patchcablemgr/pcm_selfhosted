@@ -1,0 +1,23 @@
+#!/bin/bash
+
+cd /home/pcmuser/pcm_selfhosted
+
+export MYSQL_RANDOM_PW=$(< /dev/urandom tr -dc A-Z-a-z-0-9 | head -c${1:-32};echo;)
+export MYSQL_RANDOM_ROOT_PW=$(< /dev/urandom tr -dc A-Z-a-z-0-9 | head -c${1:-32};echo;)
+export ARTISAN_KEY=$(php ./app/artisan key:generate --show)
+
+sed -i "s\^DB_APP_PASSWORD=$\DB_APP_PASSWORD=$MYSQL_RANDOM_PW\g" ./.env
+sed -i "s\^DB_APP_ROOT_PASSWORD=$\DB_APP_ROOT_PASSWORD=$MYSQL_RANDOM_ROOT_PW\g" ./.env
+sed -i "s\^APP_KEY=$\APP_KEY=$ARTISAN_KEY\g" ./.env
+
+if [ ! -f ./proxy/cert/cert.pem ]; then
+        if [ ! -f ./proxy/key/key.pem ]; then
+                openssl req -new -newkey rsa:4096 -days 3650 -nodes -x509 -subj "/C=US/ST=Washington/L=Auburn/O=PCM/CN=patchcablemgr.com" -addext "subjectAltName = DNS:patchcablemgr.com" -keyout ./proxy/key/key.pem  -out ./proxy/cert/cert.pem
+                sudo chown :pcmuser ./proxy/cert/cert.pem
+                sudo chown :pcmuser ./proxy/key/key.pem
+                sudo chmod g+rw ./proxy/cert/cert.pem
+                sudo chmod g+rw ./proxy/key/key.pem
+        fi
+fi
+
+sudo ./app/vendor/bin/sail up --build
