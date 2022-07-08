@@ -91,6 +91,7 @@ services:
       - ./proxy/key:/etc/ssl/private
     environment:
       - SUBJECT_ALTERNATE_NAME=pcm.lcl
+      - TEST=test
     restart: always
     depends_on:
       - app
