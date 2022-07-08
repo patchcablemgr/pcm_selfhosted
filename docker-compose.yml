@@ -89,9 +89,6 @@ services:
       - ./proxy/config:/etc/nginx
       - ./proxy/cert:/etc/ssl/certs
       - ./proxy/key:/etc/ssl/private
-    environment:
-      - SUBJECT_ALTERNATE_NAME=pcm.lcl
-      - SUBJECT_ALTERNATE_IP=10.0.0.100
     restart: always
     depends_on:
       - app
