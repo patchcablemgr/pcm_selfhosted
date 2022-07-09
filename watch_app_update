@@ -1,5 +1,5 @@
 #!/bin/bash
 
 git -C /home/pcmuser/pcm_selfhosted/ pull
-sudo /home/pcmuser/pcm_selfhosted/app/vendor/bin/sail -f /home/pcmuser/pcm_selfhosted/docker-compose.yml up --build
+sudo /home/pcmuser/pcm_selfhosted/app/vendor/bin/sail -d -f /home/pcmuser/pcm_selfhosted/docker-compose.yml up --build
 sudo /home/pcmuser/pcm_selfhosted/app/vendor/bin/envoy run --path=/home/pcmuser/pcm_selfhosted/app/Envoy.blade.php deploy
