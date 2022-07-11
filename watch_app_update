@@ -7,14 +7,6 @@ git -C /home/pcmuser/pcm_selfhosted/app/ pull
 ### Start containers
 sudo /home/pcmuser/pcm_selfhosted/app/vendor/bin/sail -f /home/pcmuser/pcm_selfhosted/docker-compose.yml up -d --build
 
-### Migrations
-cd /home/pcmuser/pcm_selfhosted
-./app/vendor/bin/sail artisan migrate --path=database/migrations/tenant
-
-### Seeder
-cd /home/pcmuser/pcm_selfhosted
-./app/vendor/bin/sail artisan db:seed
-
 ### Install
 cd /home/pcmuser/pcm_selfhosted/app
 composer install
@@ -26,6 +18,10 @@ npm install
 cd /home/pcmuser/pcm_selfhosted/app
 npm run prod
 
+### Migrations
+cd /home/pcmuser/pcm_selfhosted
+sudo ./app/vendor/bin/sail artisan migrate --path=database/migrations/tenant
 
-
-#sudo /home/pcmuser/pcm_selfhosted/app/vendor/bin/envoy run --path=/home/pcmuser/pcm_selfhosted/app/Envoy.blade.php upgrade
+### Seeder
+cd /home/pcmuser/pcm_selfhosted
+sudo ./app/vendor/bin/sail artisan db:seed

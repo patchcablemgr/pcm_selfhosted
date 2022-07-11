@@ -25,13 +25,13 @@ if [ -f ./initial ]; then
         sudo chmod g+rw ./proxy/cert/cert.pem
         sudo chmod g+rw ./proxy/key/key.pem
 
-        ### Upgrade to latest code
-        ./watch_app_update
+        ### Pull latest code
+        git -C /home/pcmuser/pcm_selfhosted/ pull
+        git -C /home/pcmuser/pcm_selfhosted/app/ pull
 
         ### Remove initial file
         rm ./initial
-else
-
-        ### Start application
-        sudo /home/pcmuser/pcm_selfhosted/app/vendor/bin/sail -f /home/pcmuser/pcm_selfhosted/docker-compose.yml up -d --build
 fi
+
+## Start application
+sudo /home/pcmuser/pcm_selfhosted/app/vendor/bin/sail -f /home/pcmuser/pcm_selfhosted/docker-compose.yml up -d --build

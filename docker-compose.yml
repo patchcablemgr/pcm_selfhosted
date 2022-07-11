@@ -45,6 +45,7 @@ services:
       - app_network
     depends_on:
       - database
+      - app
     entrypoint: /usr/local/bin/app_init.sh
       
   database:
@@ -93,7 +94,5 @@ services:
       - SUBJECT_ALTERNATE_NAME=pcm.lcl
       - TEST=test
     restart: always
-    depends_on:
-      - app
 networks:
   app_network:
