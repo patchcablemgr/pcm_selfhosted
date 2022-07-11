@@ -5,7 +5,7 @@ git -C /home/pcmuser/pcm_selfhosted/ pull
 git -C /home/pcmuser/pcm_selfhosted/app/ pull
 
 ### Start containers
-sudo /home/pcmuser/pcm_selfhosted/app/vendor/bin/sail -f /home/pcmuser/pcm_selfhosted/docker-compose.yml up --build
+sudo /home/pcmuser/pcm_selfhosted/app/vendor/bin/sail -f /home/pcmuser/pcm_selfhosted/docker-compose.yml up -d --build
 
 ### Install
 cd /home/pcmuser/pcm_selfhosted/app
