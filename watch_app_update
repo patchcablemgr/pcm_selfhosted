@@ -14,10 +14,6 @@ npm install
 cd /home/pcmuser/pcm_selfhosted/app/frontend
 npm install
 
-### Compile
-cd /home/pcmuser/pcm_selfhosted/app
-npm run prod
-
 ### Migrations
 cd /home/pcmuser/pcm_selfhosted/app/vendor/bin
 sudo ./sail artisan migrate --path=database/migrations/tenant
@@ -25,5 +21,11 @@ sudo ./sail artisan migrate --path=database/migrations/tenant
 ### Seeder
 cd /home/pcmuser/pcm_selfhosted/app/vendor/bin
 sudo ./sail artisan db:seed
+
+### Compile
+cd /home/pcmuser/pcm_selfhosted/app
+npm run prod
+
+
 
 #sudo /home/pcmuser/pcm_selfhosted/app/vendor/bin/envoy run --path=/home/pcmuser/pcm_selfhosted/app/Envoy.blade.php upgrade
