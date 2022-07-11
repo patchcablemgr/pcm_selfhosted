@@ -7,13 +7,6 @@ git -C /home/pcmuser/pcm_selfhosted/app/ pull
 ### Start containers
 sudo /home/pcmuser/pcm_selfhosted/app/vendor/bin/sail -f /home/pcmuser/pcm_selfhosted/docker-compose.yml up -d --build
 
-### Install
-cd /home/pcmuser/pcm_selfhosted/app
-composer install
-npm install
-cd /home/pcmuser/pcm_selfhosted/app/frontend
-npm install
-
 ### Migrations
 cd /home/pcmuser/pcm_selfhosted
 ./app/vendor/bin/sail artisan migrate --path=database/migrations/tenant
@@ -21,6 +14,13 @@ cd /home/pcmuser/pcm_selfhosted
 ### Seeder
 cd /home/pcmuser/pcm_selfhosted
 ./app/vendor/bin/sail artisan db:seed
+
+### Install
+cd /home/pcmuser/pcm_selfhosted/app
+composer install
+npm install
+cd /home/pcmuser/pcm_selfhosted/app/frontend
+npm install
 
 ### Compile
 cd /home/pcmuser/pcm_selfhosted/app
