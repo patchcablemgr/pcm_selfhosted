@@ -26,7 +26,9 @@ if [ -f ./initial ]; then
         sudo chmod g+rw ./proxy/key/key.pem
 
         ### Pull latest code
+        git -C /home/pcmuser/pcm_selfhosted/ reset --hard
         git -C /home/pcmuser/pcm_selfhosted/ pull
+        git -C /home/pcmuser/pcm_selfhosted/app/ reset --hard
         git -C /home/pcmuser/pcm_selfhosted/app/ pull
 
         ### Remove initial file
