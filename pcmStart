@@ -10,7 +10,7 @@ export ARTISAN_KEY=$(php ./app/artisan key:generate --show)
 
 ### Store secrets
 sed -i "s\^DB_APP_PASSWORD=$\DB_APP_PASSWORD=$MYSQL_RANDOM_PW\g" ./.env
-sed -i "s\^DB_APP_ROOT_PASSWORD=$\DB_APP_ROOT_PASSWORD=$MYSQL_RANDOM_ROOT_PW\g" ./.env
+sed -i "s\^DB_ROOT_PASSWORD=$\DB_ROOT_PASSWORD=$MYSQL_RANDOM_ROOT_PW\g" ./.env
 sed -i "s\^APP_KEY=$\APP_KEY=$ARTISAN_KEY\g" ./.env
 
 ### Run initial setup
