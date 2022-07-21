@@ -30,9 +30,20 @@ if [ -f ./initial ]; then
         git -C /home/pcmuser/pcm_selfhosted/ pull
         git -C /home/pcmuser/pcm_selfhosted/app/ reset --hard
         git -C /home/pcmuser/pcm_selfhosted/app/ pull
+        
+        ### Install
+        cd /home/pcmuser/pcm_selfhosted/app
+        composer install
+        npm install
+        cd /home/pcmuser/pcm_selfhosted/app/frontend
+        npm install
+        
+        ### Compile
+        cd /home/pcmuser/pcm_selfhosted/app
+        npm run prod
 
         ### Remove initial file
-        rm ./initial
+        rm /home/pcmuser/pcm_selfhosted/initial
 fi
 
 ## Start application
