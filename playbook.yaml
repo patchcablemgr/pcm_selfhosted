@@ -1,0 +1,197 @@
+---
+- name: Configure server
+  hosts: localhost
+  become: yes
+  become_method: sudo
+  tasks:
+
+  - name: Apt Update
+    ansible.builtin.apt:
+      update_cache: yes
+
+  - name: Apt Upgrade
+    ansible.builtin.apt:
+      upgrade: yes
+
+  - name: GET Nodejs repo installer
+    ansible.builtin.get_url:
+      url: https://deb.nodesource.com/setup_16.x
+      dest: ./nodesource_setup.sh
+      mode: '0770'
+
+  - name: Install Nodejs repo
+    shell: bash ./nodesource_setup.sh
+
+  - name: Install a list of packages
+    ansible.builtin.apt:
+      pkg:
+        - nodejs
+        - php8.1-xml
+        - php8.1-curl
+        - php8.1-common
+        - php8.1-cli
+
+  - name: Install composer2
+    shell: php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" && php composer-setup.php && php -r "unlink('composer-setup.php');"
+
+  - name: Move composer2 to bin
+    shell: mv composer.phar /usr/local/bin/composer
+
+  # - name: Clear repo directory
+  #   ansible.builtin.file:
+  #     path: ./pcm_selfhosted
+  #     state: absent
+
+  # - name: Clone pcm_code repository
+  #   git:
+  #     repo: git@github.com:patchcablemgr/pcm_code.git
+  #     dest: ./app
+  #     accept_hostkey: yes
+  #   become: no
+
+  - name: Delete .keep file
+    ansible.builtin.file:
+      path: ./pcm_selfhosted/app/.keep
+      state: absent
+
+  - name: Clone pcm_code repository
+    git:
+      repo: git@github.com:patchcablemgr/pcm_code.git
+      dest: ./pcm_selfhosted/app
+      accept_hostkey: yes
+    become: no
+
+  - name: Install php modules (app)
+    shell: cd ./pcm_selfhosted/app && composer install
+    become: no
+
+  - name: Copy .env file
+    ansible.builtin.copy:
+      src: ./files/dot.env
+      dest: ./pcm_selfhosted/.env
+    become: no
+
+  - name: Generate App key
+    shell: php ./pcm_selfhosted/app/artisan key:generate --show
+    register: ArtisanAppKey
+
+  - name: Write App key
+    ansible.builtin.replace:
+      path: ./pcm_selfhosted/.env
+      regexp: '^APP_KEY=$'
+      replace: 'APP_KEY={{ ArtisanAppKey }}'
+
+  # - name: Create app_update shared file
+  #   ansible.builtin.file:
+  #     path: ./pcm_selfhosted/shared/app_update
+  #     state: touch
+  #   become: no
+
+  # - name: Create ssl_config shared file
+  #   ansible.builtin.file:
+  #     path: ./pcm_selfhosted/shared/ssl_config
+  #     state: touch
+  #   become: no
+
+  # - name: Create network_config shared file
+  #   ansible.builtin.file:
+  #     path: ./pcm_selfhosted/shared/network_config
+  #     state: touch
+  #   become: no
+
+  # - name: Set permissions ./pcm_selfhosted/shared
+  #   ansible.builtin.file:
+  #     path: ./pcm_selfhosted/shared
+  #     owner: root
+  #     mode: 'g+w'
+  #     recurse: yes
+
+  - name: Set permissions ./pcm_selfhosted/app/bootstrap/cache
+    ansible.builtin.file:
+      path: ./pcm_selfhosted/app/bootstrap/cache
+      mode: 'o+rw'
+      recurse: yes
+
+  # - name: Set permissions ./pcm_selfhosted/admin/bootstrap/cache
+  #   ansible.builtin.file:
+  #     path: ./pcm_selfhosted/admin/bootstrap/cache
+  #     mode: 'o+rw'
+  #     recurse: yes
+
+  - name: Set permissions ./pcm_selfhosted/app/storage
+    ansible.builtin.file:
+      path: ./pcm_selfhosted/app/storage
+      owner: root
+      group: root
+      mode: 'g+rw'
+      recurse: yes
+
+  # - name: Set permissions ./pcm_selfhosted/admin/storage
+  #   ansible.builtin.file:
+  #     path: ./pcm_selfhosted/admin/storage
+  #     owner: root
+  #     group: root
+  #     mode: 'g+rw'
+  #     recurse: yes
+
+  # - name: Set permissions ./pcm_selfhosted/pcm/storage
+  #   ansible.builtin.file:
+  #     path: ./pcm_selfhosted/pcm/storage
+  #     owner: root
+  #     group: root
+  #     mode: 'g+rw'
+  #     recurse: yes
+
+  # - name: Setup network_config variables
+  #   shell: echo 'DHCP=yes\nHOST=\nGATEWAY=\nDNS=' > ./pcm_selfhosted/shared/network_config
+
+  - name: Install node packages (app/app)
+    shell: cd ./pcm_selfhosted/app && npm install
+    become: no
+
+  - name: Install node packages (app/frontend)
+    shell: cd ./pcm_selfhosted/app/frontend && npm install
+    become: no
+
+  - name: Compile (app)
+    shell: npm run --prefix ./pcm_selfhosted/app prod
+    become: no
+
+### START HOSTED ###
+  # - name: Install php modules (admin)
+  #   shell: cd ./pcm_selfhosted/admin && composer install
+  #   become: no
+
+  # - name: Install node packages (admin/app)
+  #   shell: cd ./pcm_selfhosted/admin && npm install
+  #   become: no
+
+  # - name: Install node packages (admin/frontend)
+  #   shell: cd ./pcm_selfhosted/admin/frontend && npm install
+  #   become: no
+
+  # - name: Compile (admin)
+  #   shell: npm run --prefix ./pcm_selfhosted/admin dev
+  #   become: no
+
+  # - name: Install php modules (pcm)
+  #   shell: cd ./pcm_selfhosted/pcm && composer install
+  #   become: no
+### END HOSTED ###
+
+  - name: Generate an OpenSSL Certificate Signing Request
+    community.crypto.openssl_csr:
+      path: /etc/ssl/csr/www.ansible.com.csr
+      privatekey_path: /etc/ssl/private/ansible.com.pem
+      common_name: www.ansible.com
+
+  - name: Install php modules (pcm)
+    shell: openssl req -nodes -new -x509 -keyout {{playbook_dir}}pcm_selfhosted/proxy/key/key.pem -out {{playbook_dir}}pcm_selfhosted/proxy/cert/cert.pem -sha256 -days 365 -subj "/C=US/ST=Washington/CN=patchcablemgr.com"
+    become: no
+
+  # - name: Set cron reboot job
+  #   ansible.builtin.cron:
+  #     name: "Start PCM"
+  #     special_time: reboot
+  #     job: "/home/pcmuser/pcm_selfhosted/pcmStart"
+  #   become: no

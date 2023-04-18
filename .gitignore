@@ -1,5 +1,6 @@
 # Project
 .env
+nodesource_setup.sh
 
 # Database
 database/storage/*
