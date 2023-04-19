@@ -3,7 +3,6 @@ services:
   app:
     env_file:
       - ./.env
-      - ./shared/network_config
     build:
       context: ./app/vendor/laravel/sail/runtimes/8.1
       dockerfile: Dockerfile

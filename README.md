@@ -1,6 +1,6 @@
 ## Usage
 
-ansible-playbook playbook.yaml -i inventory.yaml -l <INVENTORY_GROUP> --ask-become-pass
+ansible-playbook pcm_selfhosted/playbook.yaml --ask-become-pass
 
 ## PCM_Code 1.0.0
 

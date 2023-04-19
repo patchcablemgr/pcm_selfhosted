@@ -5,6 +5,22 @@
   become_method: sudo
   tasks:
 
+  - name: Add Docker s official GPG key
+    apt_key:
+      url: https://download.docker.com/linux/ubuntu/gpg
+      state: present
+
+  - name: Verify that we have the key with the fingerprint
+    apt_key:
+      id: 0EBFCD88
+      state: present
+
+  - name: Set up the stable repository
+    apt_repository:
+      repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial stable
+      state: present
+      update_cache: yes
+
   - name: Apt Update
     ansible.builtin.apt:
       update_cache: yes
@@ -30,6 +46,60 @@
         - php8.1-curl
         - php8.1-common
         - php8.1-cli
+        - ca-certificates
+        - curl
+        - gnupg
+
+  - name: Install Docker
+    ansible.builtin.apt:
+      pkg:
+        - docker-ce
+        - docker-ce-cli
+        - containerd.io
+        - docker-compose
+
+  - name: Ensure group "docker" exists
+    ansible.builtin.group:
+      name: docker
+      state: present
+
+  - name: Get current username
+    set_fact:
+      current_username: "{{ lookup('env', 'USER') }}"
+    become: no
+
+  - name: Add {{current_username}} to docker group
+    ansible.builtin.user:
+      name: "{{ current_username }}"
+      groups: docker
+      append: yes
+
+  # - name: Update apt packages
+  #   remote_user: ubuntu
+  #   apt:
+  #     update_cache: yes
+
+  # - name: Install docker
+  #   remote_user: ubuntu
+  #   apt:
+  #     name: docker-ce
+  #     state: present
+  #     update_cache: yes
+  #   #notify: Start docker on boot
+
+  # - name: Add remote "ubuntu" user to "docker" group
+  #   remote_user: ubuntu
+  #   user:
+  #     name: "ubuntu"
+  #     group: "docker"
+  #     append: yes
+
+  # - name: Install docker-compose
+  #   remote_user: ubuntu
+  #   get_url: 
+  #     url : https://github.com/docker/compose/releases/download/1.25.1-rc1/docker-compose-Linux-x86_64
+  #     dest: /usr/local/bin/docker-compose
+  #     mode: 'u+x,g+x'
 
   - name: Install composer2
     shell: php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" && php composer-setup.php && php -r "unlink('composer-setup.php');"
@@ -37,161 +107,109 @@
   - name: Move composer2 to bin
     shell: mv composer.phar /usr/local/bin/composer
 
-  # - name: Clear repo directory
-  #   ansible.builtin.file:
-  #     path: ./pcm_selfhosted
-  #     state: absent
-
-  # - name: Clone pcm_code repository
-  #   git:
-  #     repo: git@github.com:patchcablemgr/pcm_code.git
-  #     dest: ./app
-  #     accept_hostkey: yes
-  #   become: no
-
-  - name: Delete .keep file
+  - name: Clear app directory (part 1)
     ansible.builtin.file:
-      path: ./pcm_selfhosted/app/.keep
+      path: app
       state: absent
+
+  - name: Clear app directory (part 2)
+    ansible.builtin.file:
+      path: app
+      state: directory
+    become: no
 
   - name: Clone pcm_code repository
     git:
-      repo: git@github.com:patchcablemgr/pcm_code.git
-      dest: ./pcm_selfhosted/app
+      repo: https://github.com/patchcablemgr/pcm_code.git
+      dest: app
       accept_hostkey: yes
     become: no
 
   - name: Install php modules (app)
-    shell: cd ./pcm_selfhosted/app && composer install
-    become: no
-
-  - name: Copy .env file
-    ansible.builtin.copy:
-      src: ./files/dot.env
-      dest: ./pcm_selfhosted/.env
+    shell: cd app && composer install
     become: no
 
   - name: Generate App key
-    shell: php ./pcm_selfhosted/app/artisan key:generate --show
+    shell: php app/artisan key:generate --show
     register: ArtisanAppKey
 
-  - name: Write App key
-    ansible.builtin.replace:
-      path: ./pcm_selfhosted/.env
-      regexp: '^APP_KEY=$'
-      replace: 'APP_KEY={{ ArtisanAppKey }}'
+  - name: Compile secrets
+    set_fact:
+      secret_vars:
+        app_key: "{{ArtisanAppKey.stdout}}"
+        db_appuser_pw: "{{ lookup('ansible.builtin.password', '/dev/null', seed=lookup('community.general.random_string', length=12), length=12, chars=['ascii_letters', 'digits']) }}"
+        db_pcmuser_pw: "{{ lookup('ansible.builtin.password', '/dev/null', seed=lookup('community.general.random_string', length=12), length=12, chars=['ascii_letters', 'digits']) }}"
+        db_root_pw: "{{ lookup('ansible.builtin.password', '/dev/null', seed=lookup('community.general.random_string', length=12), length=12, chars=['ascii_letters', 'digits']) }}"
 
-  # - name: Create app_update shared file
-  #   ansible.builtin.file:
-  #     path: ./pcm_selfhosted/shared/app_update
-  #     state: touch
-  #   become: no
+  - name: Store secrets
+    copy:
+      content: "{{ secret_vars | to_json }}"
+      dest: "secret_vars.json"
 
-  # - name: Create ssl_config shared file
-  #   ansible.builtin.file:
-  #     path: ./pcm_selfhosted/shared/ssl_config
-  #     state: touch
-  #   become: no
+  - name: Read secrets
+    set_fact:
+      secret_vars_from_file: "{{ lookup('file', 'secret_vars.json') | from_json }}"
 
-  # - name: Create network_config shared file
-  #   ansible.builtin.file:
-  #     path: ./pcm_selfhosted/shared/network_config
-  #     state: touch
-  #   become: no
+  - name: Print variable
+    ansible.builtin.debug:
+      var: secret_vars_from_file
 
-  # - name: Set permissions ./pcm_selfhosted/shared
-  #   ansible.builtin.file:
-  #     path: ./pcm_selfhosted/shared
-  #     owner: root
-  #     mode: 'g+w'
-  #     recurse: yes
+  - name: Template dot.env.j2 file to .env
+    ansible.builtin.template:
+      src: files/dot.env.j2
+      dest: .env
+      owner: root
+      group: root
+      mode: 0664
 
   - name: Set permissions ./pcm_selfhosted/app/bootstrap/cache
     ansible.builtin.file:
-      path: ./pcm_selfhosted/app/bootstrap/cache
+      path: app/bootstrap/cache
       mode: 'o+rw'
       recurse: yes
 
-  # - name: Set permissions ./pcm_selfhosted/admin/bootstrap/cache
-  #   ansible.builtin.file:
-  #     path: ./pcm_selfhosted/admin/bootstrap/cache
-  #     mode: 'o+rw'
-  #     recurse: yes
-
   - name: Set permissions ./pcm_selfhosted/app/storage
     ansible.builtin.file:
-      path: ./pcm_selfhosted/app/storage
+      path: app/storage
       owner: root
       group: root
       mode: 'g+rw'
       recurse: yes
 
-  # - name: Set permissions ./pcm_selfhosted/admin/storage
-  #   ansible.builtin.file:
-  #     path: ./pcm_selfhosted/admin/storage
-  #     owner: root
-  #     group: root
-  #     mode: 'g+rw'
-  #     recurse: yes
-
-  # - name: Set permissions ./pcm_selfhosted/pcm/storage
-  #   ansible.builtin.file:
-  #     path: ./pcm_selfhosted/pcm/storage
-  #     owner: root
-  #     group: root
-  #     mode: 'g+rw'
-  #     recurse: yes
-
-  # - name: Setup network_config variables
-  #   shell: echo 'DHCP=yes\nHOST=\nGATEWAY=\nDNS=' > ./pcm_selfhosted/shared/network_config
-
   - name: Install node packages (app/app)
-    shell: cd ./pcm_selfhosted/app && npm install
+    shell: cd app && npm install
     become: no
 
   - name: Install node packages (app/frontend)
-    shell: cd ./pcm_selfhosted/app/frontend && npm install
+    shell: cd app/frontend && npm install
     become: no
 
   - name: Compile (app)
-    shell: npm run --prefix ./pcm_selfhosted/app prod
+    shell: npm run --prefix app prod
     become: no
 
-### START HOSTED ###
-  # - name: Install php modules (admin)
-  #   shell: cd ./pcm_selfhosted/admin && composer install
-  #   become: no
-
-  # - name: Install node packages (admin/app)
-  #   shell: cd ./pcm_selfhosted/admin && npm install
-  #   become: no
-
-  # - name: Install node packages (admin/frontend)
-  #   shell: cd ./pcm_selfhosted/admin/frontend && npm install
-  #   become: no
-
-  # - name: Compile (admin)
-  #   shell: npm run --prefix ./pcm_selfhosted/admin dev
-  #   become: no
-
-  # - name: Install php modules (pcm)
-  #   shell: cd ./pcm_selfhosted/pcm && composer install
-  #   become: no
-### END HOSTED ###
-
-  - name: Generate an OpenSSL Certificate Signing Request
-    community.crypto.openssl_csr:
-      path: /etc/ssl/csr/www.ansible.com.csr
-      privatekey_path: /etc/ssl/private/ansible.com.pem
-      common_name: www.ansible.com
-
-  - name: Install php modules (pcm)
-    shell: openssl req -nodes -new -x509 -keyout {{playbook_dir}}pcm_selfhosted/proxy/key/key.pem -out {{playbook_dir}}pcm_selfhosted/proxy/cert/cert.pem -sha256 -days 365 -subj "/C=US/ST=Washington/CN=patchcablemgr.com"
+  - name: Generate self-signed cert & key
+    shell: openssl req -nodes -new -x509 -keyout {{playbook_dir}}/proxy/key/key.pem -out {{playbook_dir}}/proxy/cert/cert.pem -sha256 -days 365 -subj "/C=US/ST=Washington/CN=patchcablemgr.com"
     become: no
 
-  # - name: Set cron reboot job
-  #   ansible.builtin.cron:
-  #     name: "Start PCM"
-  #     special_time: reboot
-  #     job: "/home/pcmuser/pcm_selfhosted/pcmStart"
-  #   become: no
+  - name: Set cron reboot job
+    ansible.builtin.cron:
+      name: "Start PCM"
+      special_time: reboot
+      job: "/home/pcmuser/pcm_selfhosted/pcmStart"
+    become: no
+
+  - name: Template patchcablemgr.service file to /lib/systemd/system/patchcablemgr.service
+    ansible.builtin.template:
+      src: files/patchcablemgr.service.j2
+      dest: /lib/systemd/system/patchcablemgr.service
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: Enable and start patchcablemgr
+    ansible.builtin.systemd:
+      name: patchcablemgr
+      daemon_reload: true
+      enabled: true
+      state: restarted

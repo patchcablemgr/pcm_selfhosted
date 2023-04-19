@@ -1,6 +1,7 @@
 # Project
 .env
 nodesource_setup.sh
+secret_vars.json
 
 # Database
 database/storage/*
