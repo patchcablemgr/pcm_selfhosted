@@ -17,7 +17,7 @@
 
   - name: Set up the stable repository
     apt_repository:
-      repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial stable
+      repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable
       state: present
       update_cache: yes
 
@@ -74,33 +74,6 @@
       groups: docker
       append: yes
 
-  # - name: Update apt packages
-  #   remote_user: ubuntu
-  #   apt:
-  #     update_cache: yes
-
-  # - name: Install docker
-  #   remote_user: ubuntu
-  #   apt:
-  #     name: docker-ce
-  #     state: present
-  #     update_cache: yes
-  #   #notify: Start docker on boot
-
-  # - name: Add remote "ubuntu" user to "docker" group
-  #   remote_user: ubuntu
-  #   user:
-  #     name: "ubuntu"
-  #     group: "docker"
-  #     append: yes
-
-  # - name: Install docker-compose
-  #   remote_user: ubuntu
-  #   get_url: 
-  #     url : https://github.com/docker/compose/releases/download/1.25.1-rc1/docker-compose-Linux-x86_64
-  #     dest: /usr/local/bin/docker-compose
-  #     mode: 'u+x,g+x'
-
   - name: Install composer2
     shell: php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" && php composer-setup.php && php -r "unlink('composer-setup.php');"
 
@@ -115,6 +88,17 @@
   - name: Clear app directory (part 2)
     ansible.builtin.file:
       path: app
+      state: directory
+    become: no
+
+  - name: Clear database directory (part 1)
+    ansible.builtin.file:
+      path: database
+      state: absent
+
+  - name: Clear database directory (part 2)
+    ansible.builtin.file:
+      path: database
       state: directory
     become: no
 

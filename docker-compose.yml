@@ -18,6 +18,9 @@ services:
       - './shared:/shared'
     networks:
       - app_network
+    expose:
+      - 80
+      - 8000
     restart: always
     depends_on:
       - database
@@ -62,8 +65,8 @@ services:
       - './database/storage:/var/lib/mysql'
     networks:
       - app_network
-    ports:
-      - "3306:3306"
+    expose:
+      - 3306
     restart: always
 
   adminer:
@@ -71,7 +74,6 @@ services:
     container_name: adminer
     networks:
       - app_network
-    restart: always
     ports:
       - 8080:8080
     restart: always
