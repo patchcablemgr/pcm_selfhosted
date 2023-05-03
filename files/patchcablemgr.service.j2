@@ -4,9 +4,9 @@ Requires=docker.service
 After=docker.service
 
 [Service]
+Type=forking
 WorkingDirectory=/etc/docker
 ExecStart={{playbook_dir}}/app/vendor/bin/sail -f {{playbook_dir}}/docker-compose.yml up -d --build
-ExecStop={{playbook_dir}}/app/vendor/bin/sail -f {{playbook_dir}}/docker-compose.yml down
 TimeoutStartSec=0
 Restart=on-failure
 StartLimitIntervalSec=60

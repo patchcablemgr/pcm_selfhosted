@@ -9,34 +9,54 @@
     apt_key:
       url: https://download.docker.com/linux/ubuntu/gpg
       state: present
+    tags:
+    - install
 
   - name: Verify that we have the key with the fingerprint
     apt_key:
       id: 0EBFCD88
       state: present
+    tags:
+    - install
 
-  - name: Set up the stable repository
+  - name: Get OS codename
+    shell: lsb_release -cs
+    register: os_codename
+    tags:
+    - install
+
+  - name: Get Docker repository
     apt_repository:
-      repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable
+      repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu {{os_codename.stdout}} stable
       state: present
       update_cache: yes
+    tags:
+    - install
 
   - name: Apt Update
     ansible.builtin.apt:
       update_cache: yes
+    tags:
+    - install
 
   - name: Apt Upgrade
     ansible.builtin.apt:
       upgrade: yes
+    tags:
+    - install
 
   - name: GET Nodejs repo installer
     ansible.builtin.get_url:
       url: https://deb.nodesource.com/setup_16.x
       dest: ./nodesource_setup.sh
       mode: '0770'
+    tags:
+      - install
 
   - name: Install Nodejs repo
     shell: bash ./nodesource_setup.sh
+    tags:
+      - install
 
   - name: Install a list of packages
     ansible.builtin.apt:
@@ -49,6 +69,8 @@
         - ca-certificates
         - curl
         - gnupg
+    tags:
+      - install
 
   - name: Install Docker
     ansible.builtin.apt:
@@ -57,50 +79,70 @@
         - docker-ce-cli
         - containerd.io
         - docker-compose
+    tags:
+      - install
 
   - name: Ensure group "docker" exists
     ansible.builtin.group:
       name: docker
       state: present
+    tags:
+      - install
 
   - name: Get current username
     set_fact:
       current_username: "{{ lookup('env', 'USER') }}"
     become: no
+    tags:
+      - install
 
   - name: Add {{current_username}} to docker group
     ansible.builtin.user:
       name: "{{ current_username }}"
       groups: docker
       append: yes
+    tags:
+      - install
 
   - name: Install composer2
     shell: php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" && php composer-setup.php && php -r "unlink('composer-setup.php');"
+    tags:
+      - install
 
   - name: Move composer2 to bin
     shell: mv composer.phar /usr/local/bin/composer
+    tags:
+      - install
 
   - name: Clear app directory (part 1)
     ansible.builtin.file:
       path: app
       state: absent
+    tags:
+      - install
 
   - name: Clear app directory (part 2)
     ansible.builtin.file:
       path: app
       state: directory
     become: no
+    tags:
+      - install
 
   - name: Clear database directory (part 1)
     ansible.builtin.file:
       path: database
       state: absent
+    tags:
+      - install
 
   - name: Clear database directory (part 2)
     ansible.builtin.file:
       path: database
       state: directory
     become: no
+    tags:
+      - install
 
   - name: Clone pcm_code repository
     git:
@@ -108,14 +150,22 @@
       dest: app
       accept_hostkey: yes
     become: no
+    tags:
+      - install
+      - upgrade
 
   - name: Install php modules (app)
     shell: cd app && composer install
     become: no
+    tags:
+      - install
+      - upgrade
 
   - name: Generate App key
     shell: php app/artisan key:generate --show
     register: ArtisanAppKey
+    tags:
+      - install
 
   - name: Compile secrets
     set_fact:
@@ -124,19 +174,27 @@
         db_appuser_pw: "{{ lookup('ansible.builtin.password', '/dev/null', seed=lookup('community.general.random_string', length=12), length=12, chars=['ascii_letters', 'digits']) }}"
         db_pcmuser_pw: "{{ lookup('ansible.builtin.password', '/dev/null', seed=lookup('community.general.random_string', length=12), length=12, chars=['ascii_letters', 'digits']) }}"
         db_root_pw: "{{ lookup('ansible.builtin.password', '/dev/null', seed=lookup('community.general.random_string', length=12), length=12, chars=['ascii_letters', 'digits']) }}"
+    tags:
+      - install
 
   - name: Store secrets
     copy:
       content: "{{ secret_vars | to_json }}"
       dest: "secret_vars.json"
+    tags:
+      - install
 
   - name: Read secrets
     set_fact:
       secret_vars_from_file: "{{ lookup('file', 'secret_vars.json') | from_json }}"
+    tags:
+      - install
 
   - name: Print variable
     ansible.builtin.debug:
       var: secret_vars_from_file
+    tags:
+      - install
 
   - name: Template dot.env.j2 file to .env
     ansible.builtin.template:
@@ -145,43 +203,54 @@
       owner: root
       group: root
       mode: 0664
+    tags:
+      - install
+      - upgrade
 
-  - name: Set permissions ./pcm_selfhosted/app/bootstrap/cache
+  - name: Set permissions {{playbook_dir}}/app/bootstrap/cache
     ansible.builtin.file:
       path: app/bootstrap/cache
       mode: 'o+rw'
       recurse: yes
+    tags:
+      - install
 
-  - name: Set permissions ./pcm_selfhosted/app/storage
+  - name: Set permissions {{playbook_dir}}/app/storage
     ansible.builtin.file:
       path: app/storage
       owner: root
       group: root
-      mode: 'g+rw'
+      mode: 0644
       recurse: yes
+    tags:
+      - install
 
   - name: Install node packages (app/app)
     shell: cd app && npm install
     become: no
+    tags:
+      - install
+      - upgrade
 
   - name: Install node packages (app/frontend)
     shell: cd app/frontend && npm install
     become: no
+    tags:
+      - install
+      - upgrade
 
   - name: Compile (app)
     shell: npm run --prefix app prod
     become: no
+    tags:
+      - install
+      - upgrade
 
   - name: Generate self-signed cert & key
     shell: openssl req -nodes -new -x509 -keyout {{playbook_dir}}/proxy/key/key.pem -out {{playbook_dir}}/proxy/cert/cert.pem -sha256 -days 365 -subj "/C=US/ST=Washington/CN=patchcablemgr.com"
     become: no
-
-  - name: Set cron reboot job
-    ansible.builtin.cron:
-      name: "Start PCM"
-      special_time: reboot
-      job: "/home/pcmuser/pcm_selfhosted/pcmStart"
-    become: no
+    tags:
+      - install
 
   - name: Template patchcablemgr.service file to /lib/systemd/system/patchcablemgr.service
     ansible.builtin.template:
@@ -190,10 +259,16 @@
       owner: root
       group: root
       mode: 0644
+    tags:
+      - install
+      - upgrade
 
   - name: Enable and start patchcablemgr
-    ansible.builtin.systemd:
+    ansible.builtin.service:
       name: patchcablemgr
-      daemon_reload: true
       enabled: true
+      daemon_reload: true
       state: restarted
+    tags:
+      - install
+      - upgrade
