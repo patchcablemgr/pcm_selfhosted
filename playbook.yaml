@@ -246,6 +246,16 @@
       - install
       - upgrade
 
+  - name: Run Laravel database migrations
+    shell: {{playbook_dir}}/app/vendor/bin/sail artisan tenants:migrate
+    tags:
+      - upgrade
+
+  - name: Run Laravel database seeders
+    shell: {{playbook_dir}}/app/vendor/bin/sail artisan tenants:seed
+    tags:
+      - upgrade
+
   - name: Generate self-signed cert & key
     shell: openssl req -nodes -new -x509 -keyout {{playbook_dir}}/proxy/key/key.pem -out {{playbook_dir}}/proxy/cert/cert.pem -sha256 -days 365 -subj "/C=US/ST=Washington/CN=patchcablemgr.com"
     become: no
@@ -261,7 +271,6 @@
       mode: 0644
     tags:
       - install
-      - upgrade
 
   - name: Enable and start patchcablemgr
     ansible.builtin.service:
@@ -271,4 +280,3 @@
       state: restarted
     tags:
       - install
-      - upgrade
