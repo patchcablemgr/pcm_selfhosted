@@ -20,7 +20,6 @@ services:
       - app_network
     expose:
       - 80
-      - 8000
     restart: always
     depends_on:
       - database

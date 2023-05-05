@@ -5,25 +5,45 @@
   become_method: sudo
   tasks:
 
+  - name: Stat secrets file
+    stat:
+      path: "secret_vars.json"
+    register: secrets_file
+    tags:
+      - never
+      - install
+      - upgrade
+
+  - name: Check for existing installation
+    fail: msg='PCM appears to have already been installed.  Use [--tags upgrade] to perform an upgrade.  Use [--tags install --skip-tags prevent-destruction] destroy all data and start over'
+    when: secrets_file.stat.exists
+    tags:
+      - never
+      - install
+      - prevent-destruction
+
   - name: Add Docker s official GPG key
     apt_key:
       url: https://download.docker.com/linux/ubuntu/gpg
       state: present
     tags:
-    - install
+      - never
+      - install
 
   - name: Verify that we have the key with the fingerprint
     apt_key:
       id: 0EBFCD88
       state: present
     tags:
-    - install
+      - never
+      - install
 
   - name: Get OS codename
     shell: lsb_release -cs
     register: os_codename
     tags:
-    - install
+      - never
+      - install
 
   - name: Get Docker repository
     apt_repository:
@@ -31,19 +51,22 @@
       state: present
       update_cache: yes
     tags:
-    - install
+      - never
+      - install
 
   - name: Apt Update
     ansible.builtin.apt:
       update_cache: yes
     tags:
-    - install
+      - never
+      - install
 
   - name: Apt Upgrade
     ansible.builtin.apt:
       upgrade: yes
     tags:
-    - install
+      - never
+      - install
 
   - name: GET Nodejs repo installer
     ansible.builtin.get_url:
@@ -51,11 +74,13 @@
       dest: ./nodesource_setup.sh
       mode: '0770'
     tags:
+      - never
       - install
 
   - name: Install Nodejs repo
     shell: bash ./nodesource_setup.sh
     tags:
+      - never
       - install
 
   - name: Install a list of packages
@@ -70,6 +95,7 @@
         - curl
         - gnupg
     tags:
+      - never
       - install
 
   - name: Install Docker
@@ -80,6 +106,7 @@
         - containerd.io
         - docker-compose
     tags:
+      - never
       - install
 
   - name: Ensure group "docker" exists
@@ -87,6 +114,7 @@
       name: docker
       state: present
     tags:
+      - never
       - install
 
   - name: Get current username
@@ -94,6 +122,7 @@
       current_username: "{{ lookup('env', 'USER') }}"
     become: no
     tags:
+      - never
       - install
 
   - name: Add {{current_username}} to docker group
@@ -102,16 +131,19 @@
       groups: docker
       append: yes
     tags:
+      - never
       - install
 
   - name: Install composer2
     shell: php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" && php composer-setup.php && php -r "unlink('composer-setup.php');"
     tags:
+      - never
       - install
 
   - name: Move composer2 to bin
     shell: mv composer.phar /usr/local/bin/composer
     tags:
+      - never
       - install
 
   - name: Clear app directory (part 1)
@@ -119,6 +151,7 @@
       path: app
       state: absent
     tags:
+      - never
       - install
 
   - name: Clear app directory (part 2)
@@ -127,6 +160,7 @@
       state: directory
     become: no
     tags:
+      - never
       - install
 
   - name: Clear database directory (part 1)
@@ -134,6 +168,7 @@
       path: database
       state: absent
     tags:
+      - never
       - install
 
   - name: Clear database directory (part 2)
@@ -142,6 +177,7 @@
       state: directory
     become: no
     tags:
+      - never
       - install
 
   - name: Clone pcm_code repository
@@ -151,13 +187,21 @@
       accept_hostkey: yes
     become: no
     tags:
+      - never
       - install
+
+  - name: Pull pcm_code repository
+    shell: "git -C {{playbook_dir}}/app pull"
+    become: no
+    tags:
+      - never
       - upgrade
 
   - name: Install php modules (app)
     shell: cd app && composer install
     become: no
     tags:
+      - never
       - install
       - upgrade
 
@@ -165,6 +209,7 @@
     shell: php app/artisan key:generate --show
     register: ArtisanAppKey
     tags:
+      - never
       - install
 
   - name: Compile secrets
@@ -175,6 +220,7 @@
         db_pcmuser_pw: "{{ lookup('ansible.builtin.password', '/dev/null', seed=lookup('community.general.random_string', length=12), length=12, chars=['ascii_letters', 'digits']) }}"
         db_root_pw: "{{ lookup('ansible.builtin.password', '/dev/null', seed=lookup('community.general.random_string', length=12), length=12, chars=['ascii_letters', 'digits']) }}"
     tags:
+      - never
       - install
 
   - name: Store secrets
@@ -182,19 +228,16 @@
       content: "{{ secret_vars | to_json }}"
       dest: "secret_vars.json"
     tags:
+      - never
       - install
 
   - name: Read secrets
     set_fact:
       secret_vars_from_file: "{{ lookup('file', 'secret_vars.json') | from_json }}"
     tags:
+      - never
       - install
-
-  - name: Print variable
-    ansible.builtin.debug:
-      var: secret_vars_from_file
-    tags:
-      - install
+      - upgrade
 
   - name: Template dot.env.j2 file to .env
     ansible.builtin.template:
@@ -204,6 +247,7 @@
       group: root
       mode: 0664
     tags:
+      - never
       - install
       - upgrade
 
@@ -213,6 +257,7 @@
       mode: 'o+rw'
       recurse: yes
     tags:
+      - never
       - install
 
   - name: Set permissions {{playbook_dir}}/app/storage
@@ -220,15 +265,17 @@
       path: app/storage
       owner: root
       group: root
-      mode: 0644
+      mode: 0775
       recurse: yes
     tags:
+      - never
       - install
 
   - name: Install node packages (app/app)
     shell: cd app && npm install
     become: no
     tags:
+      - never
       - install
       - upgrade
 
@@ -236,6 +283,7 @@
     shell: cd app/frontend && npm install
     become: no
     tags:
+      - never
       - install
       - upgrade
 
@@ -243,23 +291,27 @@
     shell: npm run --prefix app prod
     become: no
     tags:
+      - never
       - install
       - upgrade
 
   - name: Run Laravel database migrations
-    shell: {{playbook_dir}}/app/vendor/bin/sail artisan tenants:migrate
+    shell: "{{playbook_dir}}/app/vendor/bin/sail artisan tenants:migrate"
     tags:
+      - never
       - upgrade
 
   - name: Run Laravel database seeders
-    shell: {{playbook_dir}}/app/vendor/bin/sail artisan tenants:seed
+    shell: "{{playbook_dir}}/app/vendor/bin/sail artisan tenants:seed"
     tags:
+      - never
       - upgrade
 
   - name: Generate self-signed cert & key
     shell: openssl req -nodes -new -x509 -keyout {{playbook_dir}}/proxy/key/key.pem -out {{playbook_dir}}/proxy/cert/cert.pem -sha256 -days 365 -subj "/C=US/ST=Washington/CN=patchcablemgr.com"
     become: no
     tags:
+      - never
       - install
 
   - name: Template patchcablemgr.service file to /lib/systemd/system/patchcablemgr.service
@@ -270,6 +322,7 @@
       group: root
       mode: 0644
     tags:
+      - never
       - install
 
   - name: Enable and start patchcablemgr
@@ -279,4 +332,5 @@
       daemon_reload: true
       state: restarted
     tags:
+      - never
       - install
