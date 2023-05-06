@@ -56,14 +56,14 @@
 
   - name: Apt Update
     ansible.builtin.apt:
-      update_cache: yes
+      update_cache: true
     tags:
       - never
       - install
 
   - name: Apt Upgrade
     ansible.builtin.apt:
-      upgrade: yes
+      upgrade: "yes"
     tags:
       - never
       - install
@@ -212,13 +212,34 @@
       - never
       - install
 
+  - name: Generate appuser database password
+    shell: openssl rand -base64 32
+    register: appuserDatabasePassword
+    tags:
+      - never
+      - install
+
+  - name: Generate pcmuser database password
+    shell: openssl rand -base64 32
+    register: pcmuserDatabasePassword
+    tags:
+      - never
+      - install
+
+  - name: Generate root database password
+    shell: openssl rand -base64 32
+    register: rootDatabasePassword
+    tags:
+      - never
+      - install
+
   - name: Compile secrets
     set_fact:
       secret_vars:
         app_key: "{{ArtisanAppKey.stdout}}"
-        db_appuser_pw: "{{ lookup('ansible.builtin.password', '/dev/null', seed=lookup('community.general.random_string', length=12), length=12, chars=['ascii_letters', 'digits']) }}"
-        db_pcmuser_pw: "{{ lookup('ansible.builtin.password', '/dev/null', seed=lookup('community.general.random_string', length=12), length=12, chars=['ascii_letters', 'digits']) }}"
-        db_root_pw: "{{ lookup('ansible.builtin.password', '/dev/null', seed=lookup('community.general.random_string', length=12), length=12, chars=['ascii_letters', 'digits']) }}"
+        db_appuser_pw: "{{ appuserDatabasePassword.stdout }}"
+        db_pcmuser_pw: "{{ pcmuserDatabasePassword.stdout }}"
+        db_root_pw: "{{ rootDatabasePassword.stdout }}"
     tags:
       - never
       - install
