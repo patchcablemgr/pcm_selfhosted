@@ -316,8 +316,20 @@
       - install
       - upgrade
 
+  - name: Run Laravel database migrations (default tenant)
+    shell: "{{playbook_dir}}/app/vendor/bin/sail artisan migrate"
+    tags:
+      - never
+      - upgrade
+
   - name: Run Laravel database migrations
     shell: "{{playbook_dir}}/app/vendor/bin/sail artisan tenants:migrate"
+    tags:
+      - never
+      - upgrade
+
+  - name: Run Laravel database seeders (default tenant)
+    shell: "{{playbook_dir}}/app/vendor/bin/sail artisan db:seed"
     tags:
       - never
       - upgrade
